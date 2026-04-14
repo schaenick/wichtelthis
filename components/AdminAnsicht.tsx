@@ -38,10 +38,17 @@ export default function AdminAnsicht({ runde, token }: Props) {
   const [neueEmail, setNeueEmail] = useState("");
   const [loadingAdd, setLoadingAdd] = useState(false);
   const [loadingAuslosung, setLoadingAuslosung] = useState(false);
+  const [linkKopiert, setLinkKopiert] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  const einladeLink = `${window.location.origin}/runde/${runde.id}/beitreten`;
+  const einladeLink = `${process.env.NEXT_PUBLIC_BASE_URL}/runde/${runde.id}/beitreten`;
+
+  async function linkKopieren() {
+    await navigator.clipboard.writeText(einladeLink);
+    setLinkKopiert(true);
+    setTimeout(() => setLinkKopiert(false), 2000);
+  }
 
   async function teilnehmerHinzufuegen() {
     if (!neuerName || !neueEmail) return;
@@ -108,13 +115,13 @@ export default function AdminAnsicht({ runde, token }: Props) {
   }
 
   return (
-    <div className={`min-h-screen ${t.bg} -mx-4 -mt-10 px-4 pt-10 pb-20`}>
+    <div className={`min-h-screen ${t.bg} -mx-4 -mt-10 px-4 pt-10 pb-20 transition-colors duration-300`}>
       <div className="max-w-lg mx-auto flex flex-col gap-5">
 
         <div className={`bg-white border ${t.border} rounded-xl p-5`}>
           <div className="flex items-start justify-between mb-2">
             <h1 className="font-serif text-2xl">{runde.name}</h1>
-            <span className={`text-xs px-2 py-1 rounded-full font-medium ${t.badge} ${t.badgeText}`}>
+            <span className={`text-xs px-2 py-1 rounded-full font-medium shrink-0 ml-3 ${t.badge} ${t.badgeText}`}>
               {runde.status}
             </span>
           </div>
@@ -124,33 +131,53 @@ export default function AdminAnsicht({ runde, token }: Props) {
           <div className="flex flex-wrap gap-4 text-xs text-stone-400">
             {runde.budget && <span>Budget: {runde.budget}</span>}
             {runde.stichtag && (
-              <span>Auslosung: {new Date(runde.stichtag).toLocaleDateString("de-DE")} um 12:00 Uhr</span>
+              <span>Automatische Auslosung: {new Date(runde.stichtag).toLocaleDateString("de-DE")} um 12:00 Uhr</span>
             )}
-            <span>Löschen: {new Date(runde.ablaufdatum).toLocaleDateString("de-DE")}</span>
+            <span>Datenlöschung: {new Date(runde.ablaufdatum).toLocaleDateString("de-DE")}</span>
           </div>
+        </div>
+
+        <div className={`${t.highlight} border ${t.border} rounded-xl p-5`}>
+          <p className="text-sm font-medium mb-1">✅ Deine Runde ist gespeichert!</p>
+          <p className="text-xs text-stone-500 leading-relaxed">
+            Du kannst diese Seite jederzeit verlassen – alles wird automatisch gespeichert. 
+            Den Admin-Link hast du per E-Mail bekommen, damit du jederzeit zurückfinden kannst.
+            {runde.stichtag && " Die Auslosung erfolgt automatisch am eingestellten Datum."}
+          </p>
         </div>
 
         {runde.selbstanmeldung && (
           <div className={`bg-white border ${t.border} rounded-xl p-5`}>
-            <p className="text-xs font-medium text-stone-400 uppercase tracking-wide mb-2">Einlade-Link</p>
-            <div className="flex items-center gap-2">
+            <p className="text-xs font-medium text-stone-400 uppercase tracking-wide mb-1">
+              Einlade-Link
+            </p>
+            <p className="text-xs text-stone-400 mb-3">
+              Teile diesen Link mit deinen Teilnehmern – sie können sich selbst eintragen.
+            </p>
+            <div className={`flex items-center gap-2 ${t.highlight} rounded-lg px-3 py-2`}>
               <p className="text-sm text-stone-600 truncate flex-1">{einladeLink}</p>
               <button
-                onClick={() => {
-                  navigator.clipboard.writeText(einladeLink);
-                  setSuccess("Link kopiert!");
-                }}
-                className="text-xs font-medium shrink-0 text-blue-600 hover:text-blue-700"
+                onClick={linkKopieren}
+                className={`text-xs font-medium shrink-0 px-3 py-1.5 rounded-lg border transition-all ${
+                  linkKopiert
+                    ? `${t.badge} ${t.badgeText} ${t.border}`
+                    : `border-stone-200 hover:border-stone-300 text-stone-600 hover:bg-stone-50 active:scale-95`
+                }`}
               >
-                Kopieren
+                {linkKopiert ? "✓ Kopiert!" : "Kopieren"}
               </button>
             </div>
           </div>
         )}
 
         <div className={`bg-white border ${t.border} rounded-xl p-5`}>
-          <p className="text-xs font-medium text-stone-400 uppercase tracking-wide mb-3">
+          <p className="text-xs font-medium text-stone-400 uppercase tracking-wide mb-1">
             Teilnehmer ({teilnehmer.length})
+          </p>
+          <p className="text-xs text-stone-400 mb-4">
+            {runde.selbstanmeldung
+              ? "Du kannst Teilnehmer manuell hinzufügen oder den Einlade-Link teilen – beides ist möglich."
+              : "Trage hier alle Teilnehmer ein."}
           </p>
 
           {teilnehmer.length === 0 && (
@@ -180,28 +207,35 @@ export default function AdminAnsicht({ runde, token }: Props) {
           </div>
 
           {runde.status === "offen" && (
-            <div className="flex gap-2">
-              <input
-                type="text"
-                placeholder="Name"
-                value={neuerName}
-                onChange={(e) => setNeuerName(e.target.value)}
-                className="flex-1 border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-              />
-              <input
-                type="email"
-                placeholder="E-Mail"
-                value={neueEmail}
-                onChange={(e) => setNeueEmail(e.target.value)}
-                className="flex-1 border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-              />
-              <button
-                onClick={teilnehmerHinzufuegen}
-                disabled={loadingAdd}
-                className={`${t.accent} ${t.accentHover} ${t.accentText} disabled:opacity-50 text-sm font-medium rounded-lg px-3 py-2 transition-colors`}
-              >
-                +
-              </button>
+            <div className="flex flex-col gap-2">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Name"
+                  value={neuerName}
+                  onChange={(e) => setNeuerName(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && teilnehmerHinzufuegen()}
+                  className={`flex-1 border ${t.border} rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400`}
+                />
+                <input
+                  type="email"
+                  placeholder="E-Mail"
+                  value={neueEmail}
+                  onChange={(e) => setNeueEmail(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && teilnehmerHinzufuegen()}
+                  className={`flex-1 border ${t.border} rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400`}
+                />
+                <button
+                  onClick={teilnehmerHinzufuegen}
+                  disabled={loadingAdd}
+                  className={`${t.accent} ${t.accentHover} ${t.accentText} disabled:opacity-50 text-sm font-medium rounded-lg px-3 py-2 transition-all active:scale-95`}
+                >
+                  +
+                </button>
+              </div>
+              <p className="text-xs text-stone-400">
+                Mit Enter bestätigen oder auf + klicken.
+              </p>
             </div>
           )}
         </div>
@@ -210,21 +244,30 @@ export default function AdminAnsicht({ runde, token }: Props) {
         {success && <p className="text-sm text-green-600">{success}</p>}
 
         {runde.status === "offen" && (
-          <div className="flex flex-col gap-2">
+          <div className={`bg-white border ${t.border} rounded-xl p-5 flex flex-col gap-3`}>
+            <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">
+              Manuelle Auslosung
+            </p>
+            <p className="text-xs text-stone-400 leading-relaxed">
+              {runde.stichtag
+                ? "Die Auslosung erfolgt automatisch. Du kannst aber auch jetzt manuell auslosen – das überschreibt den Zeitplan."
+                : "Starte die Auslosung wenn alle Teilnehmer eingetragen sind."}
+            </p>
             <button
               onClick={auslosungStarten}
               disabled={loadingAuslosung || teilnehmer.length < 2}
-              className={`w-full ${t.accent} ${t.accentHover} ${t.accentText} disabled:opacity-40 font-medium rounded-xl px-4 py-3 text-sm transition-colors`}
+              className={`w-full ${t.accent} ${t.accentHover} ${t.accentText} disabled:opacity-40 font-medium rounded-xl px-4 py-3 text-sm transition-all active:scale-95`}
             >
-              {loadingAuslosung ? "Wird ausgelost..." : "Auslosung starten 🎲"}
+              {loadingAuslosung ? "Wird ausgelost..." : "Jetzt auslosen 🎲"}
             </button>
             {teilnehmer.length < 2 && (
               <p className="text-xs text-stone-400 text-center">
-                Mindestens 2 Teilnehmer für die Auslosung nötig.
+                Mindestens 2 Teilnehmer erforderlich.
               </p>
             )}
           </div>
         )}
+
       </div>
     </div>
   );

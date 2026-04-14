@@ -1,5 +1,5 @@
 import { createServerClient } from "@/lib/supabase/server";
-import { notFound } = from "next/navigation";
+import { notFound }  from "next/navigation";
 import Beitreten from "@/components/Beitreten";
 
 interface Props {
@@ -12,7 +12,7 @@ export default async function BeitretenPage({ params }: Props) {
 
   const { data: runde } = await supabase
     .from("runden")
-    .select("id, name, beschreibung, budget, stichtag, status, selbstanmeldung")
+    .select("id, name, beschreibung, budget, stichtag, status, selbstanmeldung, theme")
     .eq("id", id)
     .single();
 
