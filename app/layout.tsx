@@ -1,5 +1,16 @@
 import type { Metadata } from "next";
+import { Playfair_Display, DM_Sans } from "next/font/google";
 import "./globals.css";
+
+const playfair = Playfair_Display({
+  subsets: ["latin"],
+  variable: "--font-playfair",
+});
+
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  variable: "--font-dm-sans",
+});
 
 export const metadata: Metadata = {
   title: "WichtelThis",
@@ -13,8 +24,25 @@ export default function RootLayout({
 }) {
   return (
     <html lang="de">
-      <body className="bg-stone-50 min-h-screen text-stone-900 antialiased">
-        {children}
+      <body className={`${playfair.variable} ${dmSans.variable} font-sans bg-stone-50 min-h-screen text-stone-900 antialiased`}>
+        <header className="border-b border-stone-200 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
+          <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
+<a href="/" className="font-serif text-xl tracking-tight">
+  Wichtel<span className="text-blue-600">This</span>
+</a>
+            <p className="text-xs text-stone-400 hidden sm:block">
+              Wichteln ohne Account 🎁
+            </p>
+          </div>
+        </header>
+        <main className="max-w-2xl mx-auto px-4 py-10">
+          {children}
+        </main>
+        <footer className="border-t border-stone-100 mt-20">
+          <div className="max-w-2xl mx-auto px-4 py-6 text-xs text-stone-400 text-center">
+            WichtelThis · Alle Daten werden nach Ablauf automatisch gelöscht.
+          </div>
+        </footer>
       </body>
     </html>
   );

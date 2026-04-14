@@ -10,19 +10,26 @@ export async function POST(req: Request) {
     beschreibung,
     budget,
     stichtag,
-    ablaufdatum,
+    pufferwochen,
     ersteller_name,
     ersteller_email,
     ersteller_nimmt_teil,
     selbstanmeldung,
+    theme,
   } = body;
 
-  if (!name || !ablaufdatum || !ersteller_name || !ersteller_email) {
+  if (!name || !ersteller_name || !ersteller_email) {
     return NextResponse.json(
       { error: "Pflichtfelder fehlen." },
       { status: 400 }
     );
   }
+
+  const basis = stichtag ? new Date(stichtag) : new Date();
+  const ablauf = new Date(basis);
+  const puffer = parseInt(pufferwochen ?? "2") * 7;
+  ablauf.setDate(ablauf.getDate() + puffer);
+  const ablaufdatum = ablauf.toISOString().split("T")[0];
 
   const { data: runde, error } = await supabase
     .from("runden")
@@ -32,10 +39,12 @@ export async function POST(req: Request) {
       budget: budget || null,
       stichtag: stichtag || null,
       ablaufdatum,
+      pufferwochen: puffer,
       ersteller_name,
       ersteller_email,
       ersteller_nimmt_teil,
       selbstanmeldung,
+      theme: theme ?? "neutral",
     })
     .select()
     .single();
