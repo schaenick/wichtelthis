@@ -1,5 +1,9 @@
 import { createServerClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { Resend } from "resend";
+import { adminMailHtml } from "@/lib/mails";
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(req: Request) {
   const supabase = createServerClient();
@@ -64,6 +68,20 @@ export async function POST(req: Request) {
       email: ersteller_email,
     });
   }
+
+  const adminLink = `${process.env.NEXT_PUBLIC_BASE_URL}/runde/${runde.id}?token=${runde.admin_token}`;
+
+  await resend.emails.send({
+    from: "WichtelThis <noreply@wichtelthis.klingfer.de>",
+    to: ersteller_email,
+    subject: `🎁 Deine Wichtelrunde „${name}" ist bereit!`,
+    html: adminMailHtml({
+      name: ersteller_name,
+      rundenName: name,
+      adminLink,
+      stichtag,
+    }),
+  });
 
   return NextResponse.json({
     id: runde.id,

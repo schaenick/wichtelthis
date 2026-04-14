@@ -1,6 +1,7 @@
 import { createServerClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
+import { interessenMailHtml } from "@/lib/mails";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -44,15 +45,15 @@ export async function POST(req: Request) {
     const link = `${process.env.NEXT_PUBLIC_BASE_URL}/wichtel/${geber.wichtel_token}`;
 
     await resend.emails.send({
-      from: "WichtelThis <onboarding@resend.dev>",
+      from: "WichtelThis <noreply@wichtelthis.klingfer.de>",
       to: geber.email,
-      subject: `🎁 ${teilnehmer.name} hat Interessen eingetragen!`,
-      html: `
-        <p>Hallo ${geber.name}!</p>
-        <p>Dein Wichtel <strong>${teilnehmer.name}</strong> hat gerade Interessen eingetragen:</p>
-        <blockquote>${interessen}</blockquote>
-        <p><a href="${link}">Hier ansehen →</a></p>
-      `,
+      subject: `✨ ${teilnehmer.name} hat Interessen eingetragen!`,
+      html: interessenMailHtml({
+        geberName: geber.name,
+        empfaengerName: teilnehmer.name,
+        interessen,
+        wichtelLink: link,
+      }),
     });
   }
 

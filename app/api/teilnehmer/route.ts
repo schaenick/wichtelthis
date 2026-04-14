@@ -1,11 +1,15 @@
 import { createServerClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { Resend } from "resend";
+import { beitrittsMailHtml } from "@/lib/mails";
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(req: Request) {
   const supabase = createServerClient();
   const body = await req.json();
 
-  const { runde_id, name, email } = body;
+  const { runde_id, name, email, interessen } = body;
 
   if (!runde_id || !name || !email) {
     return NextResponse.json(
@@ -16,7 +20,7 @@ export async function POST(req: Request) {
 
   const { data: runde } = await supabase
     .from("runden")
-    .select("status")
+    .select("*")
     .eq("id", runde_id)
     .single();
 
@@ -29,7 +33,7 @@ export async function POST(req: Request) {
 
   const { data: teilnehmer, error } = await supabase
     .from("teilnehmer")
-    .insert({ runde_id, name, email })
+    .insert({ runde_id, name, email, interessen: interessen || null })
     .select()
     .single();
 
@@ -45,6 +49,20 @@ export async function POST(req: Request) {
       { status: 500 }
     );
   }
+
+  const wichtelLink = `${process.env.NEXT_PUBLIC_BASE_URL}/wichtel/${teilnehmer.wichtel_token}`;
+
+  await resend.emails.send({
+    from: "WichtelThis <noreply@wichtelthis.klingfer.de>",
+    to: email,
+    subject: `🎁 Du nimmst an „${runde.name}" teil!`,
+    html: beitrittsMailHtml({
+      name,
+      rundenName: runde.name,
+      wichtelLink,
+      budget: runde.budget,
+    }),
+  });
 
   return NextResponse.json(teilnehmer);
 }

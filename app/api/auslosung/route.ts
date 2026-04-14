@@ -1,6 +1,7 @@
 import { createServerClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
+import { auslosungsMailHtml } from "@/lib/mails";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -111,18 +112,17 @@ export async function POST(req: Request) {
       const link = `${process.env.NEXT_PUBLIC_BASE_URL}/wichtel/${geber.wichtel_token}`;
 
       return resend.emails.send({
-        from: "WichtelThis <onboarding@resend.dev>",
+        from: "WichtelThis <noreply@wichtelthis.klingfer.de>",
         to: geber.email,
-        subject: `🎁 Dein Wichtel für „${runde.name}"`,
-        html: `
-          <p>Hallo ${geber.name}!</p>
-          <p>Die Auslosung für <strong>${runde.name}</strong> hat stattgefunden.</p>
-          <p>Du beschenkst: <strong>${empfaenger.name}</strong></p>
-          ${empfaenger.interessen ? `<p>Interessen: ${empfaenger.interessen}</p>` : ""}
-          ${runde.budget ? `<p>Budget: ${runde.budget}</p>` : ""}
-          <p><a href="${link}">Deine Zuteilung ansehen →</a></p>
-          <p>Viel Spaß beim Schenken! 🎄</p>
-        `,
+        subject: `🎲 Die Auslosung für „${runde.name}" hat stattgefunden!`,
+        html: auslosungsMailHtml({
+          geberName: geber.name,
+          empfaengerName: empfaenger.name,
+          rundenName: runde.name,
+          wichtelLink: link,
+          budget: runde.budget,
+          interessen: empfaenger.interessen,
+        }),
       });
     }
   );
